@@ -28,7 +28,7 @@ dotnet tool install --global azmg
 ### Using Homebrew (macOS/Linux)
 
 ```bash
-brew tap obay/tools
+brew tap obay/tap
 brew install azmg
 ```
 

@@ -70,12 +70,21 @@ jobs:
           - os: ubuntu-latest
             rid: linux-x64
             artifact_name: azmg-linux-x64
+          - os: ubuntu-latest
+            rid: linux-arm64
+            artifact_name: azmg-linux-arm64
           - os: windows-latest
             rid: win-x64
             artifact_name: azmg-win-x64.exe
+          - os: windows-latest
+            rid: win-arm64
+            artifact_name: azmg-win-arm64.exe
           - os: macos-latest
             rid: osx-x64
             artifact_name: azmg-osx-x64
+          - os: macos-latest
+            rid: osx-arm64
+            artifact_name: azmg-osx-arm64
             
     steps:
     - uses: actions/checkout@v4

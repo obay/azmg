@@ -6,7 +6,11 @@
     "architecture": {
         "64bit": {
             "url": "https://github.com/obay/azmg/releases/download/v1.0.0/azmg-win-x64.exe.zip",
-            "hash": ""
+            "hash": "PLACEHOLDER_HASH_WIN_X64"
+        },
+        "arm64": {
+            "url": "https://github.com/obay/azmg/releases/download/v1.0.0/azmg-win-arm64.exe.zip",
+            "hash": "PLACEHOLDER_HASH_WIN_ARM64"
         }
     },
     "bin": "azmg.exe",
@@ -17,6 +21,9 @@
         "architecture": {
             "64bit": {
                 "url": "https://github.com/obay/azmg/releases/download/v$version/azmg-win-x64.exe.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/obay/azmg/releases/download/v$version/azmg-win-arm64.exe.zip"
             }
         }
     },
@@ -24,10 +31,12 @@
         "Azure CLI": "azure-cli"
     },
     "notes": [
-        "azmg requires Azure authentication. You can use:",
-        "- Azure CLI: 'az login'",
-        "- Service Principal: See https://github.com/obay/azmg#authentication-options",
-        "- Managed Identity: For Azure VMs/Services",
-        "- Interactive: Browser-based authentication"
+        "azmg requires Azure authentication. You can authenticate using:",
+        "",
+        "• Azure CLI (recommended): az login",
+        "• Service Principal: Set environment variables or use config file",
+        "• Managed Identity: Auto-detected on Azure resources",
+        "",
+        "Documentation: https://github.com/obay/azmg#authentication"
     ]
 }

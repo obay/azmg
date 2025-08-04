@@ -1,0 +1,171 @@
+name: Update Package Repositories
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  update-packages:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout azmg repo
+      uses: actions/checkout@v4
+      
+    - name: Get release version
+      id: version
+      run: |
+        VERSION="${{ github.event.release.tag_name }}"
+        VERSION="${VERSION#v}"
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        
+    - name: Download and hash release artifacts
+      id: hashes
+      run: |
+        VERSION="${{ steps.version.outputs.version }}"
+        
+        # Function to download and get hash
+        get_hash() {
+          local file=$1
+          local url="https://github.com/obay/azmg/releases/download/v$VERSION/$file"
+          curl -sL "$url" | sha256sum | cut -d' ' -f1
+        }
+        
+        # Calculate all hashes
+        echo "hash_linux_x64=$(get_hash 'azmg-linux-x64.tar.gz')" >> $GITHUB_OUTPUT
+        echo "hash_linux_arm64=$(get_hash 'azmg-linux-arm64.tar.gz')" >> $GITHUB_OUTPUT
+        echo "hash_win_x64=$(get_hash 'azmg-win-x64.exe.zip')" >> $GITHUB_OUTPUT
+        echo "hash_win_arm64=$(get_hash 'azmg-win-arm64.exe.zip')" >> $GITHUB_OUTPUT
+        echo "hash_osx_x64=$(get_hash 'azmg-osx-x64.tar.gz')" >> $GITHUB_OUTPUT
+        echo "hash_osx_arm64=$(get_hash 'azmg-osx-arm64.tar.gz')" >> $GITHUB_OUTPUT
+        
+    - name: Update Homebrew Formula
+      run: |
+        # Create the formula with actual hashes
+        cat > azmg.rb << 'EOF'
+class Azmg < Formula
+  desc "Azure Management Groups and Subscriptions hierarchy visualization tool"
+  homepage "https://github.com/obay/azmg"
+  version "${{ steps.version.outputs.version }}"
+  license "MIT"
+
+  on_macos do
+    if Hardware::CPU.intel?
+      url "https://github.com/obay/azmg/releases/download/v#{version}/azmg-osx-x64.tar.gz"
+      sha256 "${{ steps.hashes.outputs.hash_osx_x64 }}"
+    end
+
+    if Hardware::CPU.arm?
+      url "https://github.com/obay/azmg/releases/download/v#{version}/azmg-osx-arm64.tar.gz"
+      sha256 "${{ steps.hashes.outputs.hash_osx_arm64 }}"
+    end
+  end
+
+  on_linux do
+    if Hardware::CPU.intel?
+      url "https://github.com/obay/azmg/releases/download/v#{version}/azmg-linux-x64.tar.gz"
+      sha256 "${{ steps.hashes.outputs.hash_linux_x64 }}"
+    end
+
+    if Hardware::CPU.arm?
+      url "https://github.com/obay/azmg/releases/download/v#{version}/azmg-linux-arm64.tar.gz"
+      sha256 "${{ steps.hashes.outputs.hash_linux_arm64 }}"
+    end
+  end
+
+  def install
+    bin.install "azmg"
+  end
+
+  test do
+    assert_match "azmg", shell_output("#{bin}/azmg --version")
+  end
+
+  def caveats
+    <<~EOS
+      azmg requires Azure authentication. You can authenticate using:
+      
+      • Azure CLI (recommended):
+        az login
+      
+      • Service Principal:
+        Set environment variables or use configuration file
+      
+      • Managed Identity:
+        Automatically used when running on Azure resources
+      
+      For more information, see:
+      https://github.com/obay/azmg#authentication
+    EOS
+  end
+end
+EOF
+        
+    - name: Update Scoop Manifest
+      run: |
+        cat > azmg.json << EOF
+{
+    "version": "${{ steps.version.outputs.version }}",
+    "description": "Azure Management Groups and Subscriptions hierarchy visualization tool",
+    "homepage": "https://github.com/obay/azmg",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/obay/azmg/releases/download/v${{ steps.version.outputs.version }}/azmg-win-x64.exe.zip",
+            "hash": "${{ steps.hashes.outputs.hash_win_x64 }}"
+        },
+        "arm64": {
+            "url": "https://github.com/obay/azmg/releases/download/v${{ steps.version.outputs.version }}/azmg-win-arm64.exe.zip",
+            "hash": "${{ steps.hashes.outputs.hash_win_arm64 }}"
+        }
+    },
+    "bin": "azmg.exe",
+    "checkver": {
+        "github": "https://github.com/obay/azmg"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/obay/azmg/releases/download/v\$version/azmg-win-x64.exe.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/obay/azmg/releases/download/v\$version/azmg-win-arm64.exe.zip"
+            }
+        }
+    },
+    "suggest": {
+        "Azure CLI": "azure-cli"
+    },
+    "notes": [
+        "azmg requires Azure authentication. You can authenticate using:",
+        "",
+        "• Azure CLI (recommended): az login",
+        "• Service Principal: Set environment variables or use config file",
+        "• Managed Identity: Auto-detected on Azure resources",
+        "",
+        "Documentation: https://github.com/obay/azmg#authentication"
+    ]
+}
+EOF
+        
+    - name: Create Homebrew PR
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        push-to-fork: obay/homebrew-tap
+        path: homebrew-tap
+        commit-message: "Update azmg to ${{ steps.version.outputs.version }}"
+        title: "Update azmg to ${{ steps.version.outputs.version }}"
+        body: "Updates azmg formula to version ${{ steps.version.outputs.version }}"
+        branch: update-azmg-${{ steps.version.outputs.version }}
+        
+    - name: Create Scoop PR
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.SCOOP_BUCKET_TOKEN }}
+        push-to-fork: obay/scoop-bucket
+        path: scoop-bucket
+        commit-message: "Update azmg to ${{ steps.version.outputs.version }}"
+        title: "Update azmg to ${{ steps.version.outputs.version }}"
+        body: "Updates azmg manifest to version ${{ steps.version.outputs.version }}"
+        branch: update-azmg-${{ steps.version.outputs.version }}

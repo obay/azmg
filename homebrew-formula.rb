@@ -1,5 +1,5 @@
-# This is a template Homebrew formula for azmg
-# To be published to a tap repository like homebrew-obay
+# Homebrew formula for azmg
+# To be published to https://github.com/obay/homebrew-tap/Formula/azmg.rb
 class Azmg < Formula
   desc "Azure Management Groups and Subscriptions hierarchy visualization tool"
   homepage "https://github.com/obay/azmg"
@@ -8,38 +8,51 @@ class Azmg < Formula
 
   on_macos do
     if Hardware::CPU.intel?
-      url "https://github.com/obay/azmg/releases/download/v1.0.0/azmg-osx-x64.tar.gz"
-      sha256 ""
+      url "https://github.com/obay/azmg/releases/download/v#{version}/azmg-osx-x64.tar.gz"
+      sha256 "PLACEHOLDER_HASH_OSX_X64"
     end
 
     if Hardware::CPU.arm?
-      url "https://github.com/obay/azmg/releases/download/v1.0.0/azmg-osx-arm64.tar.gz"
-      sha256 ""
+      url "https://github.com/obay/azmg/releases/download/v#{version}/azmg-osx-arm64.tar.gz"
+      sha256 "PLACEHOLDER_HASH_OSX_ARM64"
     end
   end
 
   on_linux do
-    url "https://github.com/obay/azmg/releases/download/v1.0.0/azmg-linux-x64.tar.gz"
-    sha256 ""
-  end
+    if Hardware::CPU.intel?
+      url "https://github.com/obay/azmg/releases/download/v#{version}/azmg-linux-x64.tar.gz"
+      sha256 "PLACEHOLDER_HASH_LINUX_X64"
+    end
 
-  depends_on :macos => :mojave if OS.mac?
+    if Hardware::CPU.arm?
+      url "https://github.com/obay/azmg/releases/download/v#{version}/azmg-linux-arm64.tar.gz"
+      sha256 "PLACEHOLDER_HASH_LINUX_ARM64"
+    end
+  end
 
   def install
     bin.install "azmg"
   end
 
   test do
-    assert_match "Azure Management Groups", shell_output("#{bin}/azmg --help")
+    assert_match "azmg", shell_output("#{bin}/azmg --version")
   end
 
   def caveats
     <<~EOS
-      azmg requires Azure authentication. You can use:
-      - Azure CLI: 'az login'
-      - Service Principal: See https://github.com/obay/azmg#authentication-options
-      - Managed Identity: For Azure VMs/Services
-      - Interactive: Browser-based authentication
+      azmg requires Azure authentication. You can authenticate using:
+      
+      • Azure CLI (recommended):
+        az login
+      
+      • Service Principal:
+        Set environment variables or use configuration file
+      
+      • Managed Identity:
+        Automatically used when running on Azure resources
+      
+      For more information, see:
+      https://github.com/obay/azmg#authentication
     EOS
   end
 end
