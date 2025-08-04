@@ -1,0 +1,33 @@
+{
+    "version": "1.0.0",
+    "description": "Azure Management Groups and Subscriptions hierarchy visualization tool",
+    "homepage": "https://github.com/obay/azmg",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/obay/azmg/releases/download/v1.0.0/azmg-win-x64.exe.zip",
+            "hash": ""
+        }
+    },
+    "bin": "azmg.exe",
+    "checkver": {
+        "github": "https://github.com/obay/azmg"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/obay/azmg/releases/download/v$version/azmg-win-x64.exe.zip"
+            }
+        }
+    },
+    "suggest": {
+        "Azure CLI": "azure-cli"
+    },
+    "notes": [
+        "azmg requires Azure authentication. You can use:",
+        "- Azure CLI: 'az login'",
+        "- Service Principal: See https://github.com/obay/azmg#authentication-options",
+        "- Managed Identity: For Azure VMs/Services",
+        "- Interactive: Browser-based authentication"
+    ]
+}

@@ -1,0 +1,151 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.0.0)'
+        required: true
+        type: string
+
+env:
+  DOTNET_VERSION: '8.0.x'
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        
+    - name: Set version
+      run: |
+        if [ "${{ github.event_name }}" == "release" ]; then
+          VERSION="${{ github.event.release.tag_name }}"
+        else
+          VERSION="${{ github.event.inputs.version }}"
+        fi
+        VERSION="${VERSION#v}"
+        echo "VERSION=$VERSION" >> $GITHUB_ENV
+        echo "Building version: $VERSION"
+        
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Build
+      run: dotnet build --configuration Release /p:Version=${{ env.VERSION }}
+      
+    - name: Test
+      run: dotnet test --no-build --configuration Release
+      
+    - name: Pack
+      run: dotnet pack --no-build --configuration Release /p:Version=${{ env.VERSION }} --output ./artifacts
+      
+    - name: Push to NuGet
+      run: dotnet nuget push ./artifacts/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+      
+    - name: Upload release artifacts
+      if: github.event_name == 'release'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./artifacts/azmg.${{ env.VERSION }}.nupkg
+        asset_name: azmg.${{ env.VERSION }}.nupkg
+        asset_content_type: application/octet-stream
+        
+  build-binaries:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rid: linux-x64
+            artifact_name: azmg-linux-x64
+          - os: windows-latest
+            rid: win-x64
+            artifact_name: azmg-win-x64.exe
+          - os: macos-latest
+            rid: osx-x64
+            artifact_name: azmg-osx-x64
+            
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        
+    - name: Set version
+      run: |
+        if [ "${{ github.event_name }}" == "release" ]; then
+          VERSION="${{ github.event.release.tag_name }}"
+        else
+          VERSION="${{ github.event.inputs.version }}"
+        fi
+        VERSION="${VERSION#v}"
+        echo "VERSION=$VERSION" >> $GITHUB_ENV
+      shell: bash
+        
+    - name: Publish
+      run: |
+        dotnet publish -c Release -r ${{ matrix.rid }} \
+          /p:PublishSingleFile=true \
+          /p:SelfContained=true \
+          /p:PublishTrimmed=true \
+          /p:Version=${{ env.VERSION }} \
+          -o ./publish
+      shell: bash
+          
+    - name: Create archive (Linux/macOS)
+      if: matrix.os != 'windows-latest'
+      run: |
+        cd publish
+        chmod +x azmg
+        tar -czf ../${{ matrix.artifact_name }}.tar.gz azmg
+        cd ..
+        
+    - name: Create archive (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        Compress-Archive -Path ./publish/azmg.exe -DestinationPath ./${{ matrix.artifact_name }}.zip
+      shell: pwsh
+        
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.artifact_name }}
+        path: |
+          *.tar.gz
+          *.zip
+          
+    - name: Upload to release (Linux/macOS)
+      if: github.event_name == 'release' && matrix.os != 'windows-latest'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./${{ matrix.artifact_name }}.tar.gz
+        asset_name: ${{ matrix.artifact_name }}.tar.gz
+        asset_content_type: application/gzip
+        
+    - name: Upload to release (Windows)
+      if: github.event_name == 'release' && matrix.os == 'windows-latest'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./${{ matrix.artifact_name }}.zip
+        asset_name: ${{ matrix.artifact_name }}.zip
+        asset_content_type: application/zip

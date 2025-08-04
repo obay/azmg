@@ -1,0 +1,69 @@
+name: Build
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '8.0.x'
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Build
+      run: dotnet build --no-restore --configuration Release
+      
+    - name: Test
+      run: dotnet test --no-build --verbosity normal --configuration Release
+      
+    - name: Pack
+      if: matrix.os == 'ubuntu-latest'
+      run: dotnet pack --no-build --configuration Release --output ./artifacts
+      
+    - name: Upload artifacts
+      if: matrix.os == 'ubuntu-latest'
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget-packages
+        path: ./artifacts/*.nupkg
+        
+  code-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Check format
+      run: dotnet format --verify-no-changes --verbosity diagnostic
+      
+    - name: Run code analysis
+      run: |
+        dotnet tool install --global dotnet-sonarscanner
+        dotnet tool install --global coverlet.console
+        # Add SonarCloud or other code analysis here if configured

@@ -1,0 +1,44 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>AzMg</RootNamespace>
+    <AssemblyName>azmg</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>false</SelfContained>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>azmg</ToolCommandName>
+    <PackageId>azmg</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Your Name</Authors>
+    <Description>Azure Management Groups and Subscriptions hierarchy visualization tool</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/obay/azmg</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/obay/azmg</RepositoryUrl>
+    <PackageTags>azure;management-groups;subscriptions;hierarchy;cli</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.Identity" Version="1.14.2" />
+    <PackageReference Include="Azure.ResourceManager" Version="1.13.2" />
+    <PackageReference Include="Azure.ResourceManager.Resources" Version="1.11.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="azmg.Tests\**" />
+    <EmbeddedResource Remove="azmg.Tests\**" />
+    <None Remove="azmg.Tests\**" />
+  </ItemGroup>
+
+</Project>
