@@ -120,7 +120,7 @@ public class OutputFormattingTests
     {
         // This test would verify ANSI color codes are present when color is enabled
         // For simplicity, we're just testing the concept
-        
+
         // Arrange
         var colorEnabled = true;
         var output = new StringBuilder();

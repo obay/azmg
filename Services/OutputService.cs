@@ -30,23 +30,23 @@ namespace AzMg.Services
         private async Task OutputAsTreeAsync(HierarchyData hierarchyData, bool colorEnabled)
         {
             Console.WriteLine("=== Azure Management Groups and Subscriptions Tree ===\n");
-            
+
             // Start with root management groups
             foreach (var rootMg in hierarchyData.RootManagementGroups)
             {
                 await PrintManagementGroupTreeAsync(
-                    rootMg, 
-                    hierarchyData.ManagementGroups, 
-                    hierarchyData.Hierarchy, 
-                    hierarchyData.Subscriptions, 
-                    hierarchyData.ManagementGroupToDirectSubscriptions, 
-                    0, 
+                    rootMg,
+                    hierarchyData.ManagementGroups,
+                    hierarchyData.Hierarchy,
+                    hierarchyData.Subscriptions,
+                    hierarchyData.ManagementGroupToDirectSubscriptions,
+                    0,
                     colorEnabled);
             }
         }
-        
+
         private async Task PrintManagementGroupTreeAsync(
-            string mgName, 
+            string mgName,
             Dictionary<string, ManagementGroupResource> managementGroups,
             Dictionary<string, List<string>> mgHierarchy,
             Dictionary<string, SubscriptionResource> subscriptions,
@@ -56,7 +56,7 @@ namespace AzMg.Services
         {
             var mg = managementGroups[mgName];
             string prefix = new string(' ', indent * 2) + (indent == 0 ? "" : "├─ ");
-            
+
             if (colorEnabled)
             {
                 Console.ForegroundColor = ConsoleColor.Blue;
@@ -79,7 +79,7 @@ namespace AzMg.Services
                     .Select(subId => subscriptions[subId])
                     .OrderBy(sub => sub.Data.DisplayName)
                     .ToList();
-                    
+
                 foreach (var sub in sortedSubs)
                 {
                     string subPrefix = new string(' ', (indent + 1) * 2) + "├─ ";
@@ -106,7 +106,7 @@ namespace AzMg.Services
                 var sortedChildren = mgHierarchy[mgName]
                     .OrderBy(childName => managementGroups[childName].Data.DisplayName)
                     .ToList();
-                    
+
                 foreach (var childMg in sortedChildren)
                 {
                     await PrintManagementGroupTreeAsync(childMg, managementGroups, mgHierarchy, subscriptions, mgToDirectSubs, indent + 1, colorEnabled);

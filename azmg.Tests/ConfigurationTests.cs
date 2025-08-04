@@ -143,7 +143,7 @@ public class ConfigurationTests
 
         // Assert
         method.Should().Be(authMethod);
-        
+
         if (authMethod == "serviceprincipal")
         {
             // For service principal, we'd need additional validation logic

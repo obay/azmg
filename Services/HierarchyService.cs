@@ -21,7 +21,7 @@ namespace AzMg.Services
         public async Task<HierarchyData> FetchHierarchyAsync(ArmClient armClient)
         {
             _logger.LogInformation("Retrieving Management Groups and Subscriptions...");
-            
+
             var managementGroups = new Dictionary<string, ManagementGroupResource>();
             var mgHierarchy = new Dictionary<string, List<string>>();
             var rootMgs = new List<string>();
@@ -31,11 +31,11 @@ namespace AzMg.Services
             await foreach (var mg in mgCollection.GetAllAsync())
             {
                 _logger.LogDebug("Processing management group: {Name}", mg.Data.Name);
-                
+
                 // Get the full management group details with expand parameter
                 var fullMg = await armClient.GetManagementGroupResource(mg.Id).GetAsync(expand: ManagementGroupExpandType.Children);
                 managementGroups[mg.Data.Name] = fullMg.Value;
-                
+
                 // Build parent-child relationships
                 if (fullMg.Value.Data.Details?.Parent?.Id != null)
                 {
@@ -82,7 +82,7 @@ namespace AzMg.Services
             {
                 mgToDirectSubs[mg.Data.Name] = new List<string>();
             }
-            
+
             // Build a complete hierarchy map including all descendants
             var mgDescendants = new Dictionary<string, HashSet<string>>();
             foreach (var mg in managementGroups.Values)
@@ -96,12 +96,12 @@ namespace AzMg.Services
                     }
                 }
             }
-            
+
             // For each subscription, find its immediate parent
             foreach (var sub in subscriptions.Values)
             {
                 string? immediateParent = null;
-                
+
                 // Find all management groups that contain this subscription
                 var containingMgs = new List<string>();
                 foreach (var kvp in mgDescendants)
@@ -111,12 +111,12 @@ namespace AzMg.Services
                         containingMgs.Add(kvp.Key);
                     }
                 }
-                
+
                 // Find the most specific (deepest) management group
                 if (containingMgs.Any())
                 {
                     immediateParent = containingMgs[0];
-                    
+
                     // Check which MG is the most specific by checking parent relationships
                     foreach (var mg in containingMgs)
                     {
@@ -141,7 +141,7 @@ namespace AzMg.Services
                         }
                     }
                 }
-                
+
                 if (immediateParent != null)
                 {
                     mgToDirectSubs[immediateParent].Add(sub.Data.SubscriptionId);
@@ -156,17 +156,17 @@ namespace AzMg.Services
             // Check if childMg is a descendant of parentMg
             if (!mgHierarchy.ContainsKey(parentMg))
                 return false;
-                
+
             if (mgHierarchy[parentMg].Contains(childMg))
                 return true;
-                
+
             // Check recursively
             foreach (var directChild in mgHierarchy[parentMg])
             {
                 if (IsDescendantOf(childMg, directChild, mgHierarchy, managementGroups))
                     return true;
             }
-            
+
             return false;
         }
     }

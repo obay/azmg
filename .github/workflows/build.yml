@@ -60,7 +60,7 @@ jobs:
       run: dotnet restore
       
     - name: Check format
-      run: dotnet format --verify-no-changes --verbosity diagnostic
+      run: dotnet format azmg.sln --verify-no-changes --verbosity diagnostic
       
     - name: Run code analysis
       run: |

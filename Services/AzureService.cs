@@ -20,35 +20,35 @@ public class AzureService : IAzureService
     public async Task<Dictionary<string, ManagementGroupResource>> GetManagementGroupsAsync(ArmClient armClient)
     {
         ArgumentNullException.ThrowIfNull(armClient);
-        
+
         var managementGroups = new Dictionary<string, ManagementGroupResource>();
         var mgCollection = armClient.GetManagementGroups();
-        
+
         await foreach (var mg in mgCollection.GetAllAsync())
         {
             _logger.LogDebug("Processing management group: {Name}", mg.Data.Name);
-            
+
             // Get the full management group details with expand parameter
             var fullMg = await armClient.GetManagementGroupResource(mg.Id).GetAsync(expand: ManagementGroupExpandType.Children);
             managementGroups[mg.Data.Name] = fullMg.Value;
         }
-        
+
         return managementGroups;
     }
 
     public async Task<Dictionary<string, SubscriptionResource>> GetSubscriptionsAsync(ArmClient armClient)
     {
         ArgumentNullException.ThrowIfNull(armClient);
-        
+
         var subscriptions = new Dictionary<string, SubscriptionResource>();
         var subCollection = armClient.GetSubscriptions();
-        
+
         await foreach (var sub in subCollection.GetAllAsync())
         {
             _logger.LogDebug("Processing subscription: {Name}", sub.Data.DisplayName);
             subscriptions[sub.Data.SubscriptionId] = sub;
         }
-        
+
         return subscriptions;
     }
 
@@ -56,7 +56,7 @@ public class AzureService : IAzureService
         Dictionary<string, ManagementGroupResource> managementGroups)
     {
         var mgHierarchy = new Dictionary<string, List<string>>();
-        
+
         foreach (var mg in managementGroups.Values)
         {
             if (mg.Data.Details?.Parent?.Id != null)
@@ -67,7 +67,7 @@ public class AzureService : IAzureService
                 mgHierarchy[parentId].Add(mg.Data.Name);
             }
         }
-        
+
         return await Task.FromResult(mgHierarchy);
     }
 
@@ -81,7 +81,7 @@ public class AzureService : IAzureService
         {
             mgToDirectSubs[mg.Data.Name] = new List<string>();
         }
-        
+
         // Build a complete hierarchy map including all descendants
         var mgDescendants = new Dictionary<string, HashSet<string>>();
         foreach (var mg in managementGroups.Values)
@@ -95,12 +95,12 @@ public class AzureService : IAzureService
                 }
             }
         }
-        
+
         // For each subscription, find its immediate parent
         foreach (var sub in subscriptions.Values)
         {
             string? immediateParent = null;
-            
+
             // Find all management groups that contain this subscription
             var containingMgs = new List<string>();
             foreach (var kvp in mgDescendants)
@@ -110,12 +110,12 @@ public class AzureService : IAzureService
                     containingMgs.Add(kvp.Key);
                 }
             }
-            
+
             // Find the most specific (deepest) management group
             if (containingMgs.Any())
             {
                 immediateParent = containingMgs[0];
-                
+
                 // Check which MG is the most specific by checking parent relationships
                 foreach (var mg in containingMgs)
                 {
@@ -140,7 +140,7 @@ public class AzureService : IAzureService
                     }
                 }
             }
-            
+
             if (immediateParent != null)
             {
                 mgToDirectSubs[immediateParent].Add(sub.Data.SubscriptionId);
@@ -153,7 +153,7 @@ public class AzureService : IAzureService
     public List<string> GetRootManagementGroups(Dictionary<string, ManagementGroupResource> managementGroups)
     {
         var rootMgs = new List<string>();
-        
+
         foreach (var mg in managementGroups.Values)
         {
             if (mg.Data.Details?.Parent?.Id == null)
@@ -161,7 +161,7 @@ public class AzureService : IAzureService
                 rootMgs.Add(mg.Data.Name);
             }
         }
-        
+
         return rootMgs;
     }
 
@@ -196,17 +196,17 @@ public class AzureService : IAzureService
         // Check if childMg is a descendant of parentMg
         if (!mgHierarchy.ContainsKey(parentMg))
             return false;
-            
+
         if (mgHierarchy[parentMg].Contains(childMg))
             return true;
-            
+
         // Check recursively
         foreach (var directChild in mgHierarchy[parentMg])
         {
             if (IsDescendantOf(childMg, directChild, mgHierarchy, managementGroups))
                 return true;
         }
-        
+
         return false;
     }
 }

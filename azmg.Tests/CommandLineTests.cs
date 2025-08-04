@@ -172,7 +172,7 @@ internal static class ParseResultExtensions
     {
         var option = parseResult.CommandResult.Command.Options
             .FirstOrDefault(o => o.Name == optionName || o.Aliases.Contains(optionName));
-        
+
         return option != null ? parseResult.GetValueForOption((Option<T>)option) : default;
     }
 }
